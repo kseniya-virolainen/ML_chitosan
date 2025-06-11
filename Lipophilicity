@@ -1,0 +1,76 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Loading the dataset
+df = pd.read_csv('/content/database_chitosan.csv')
+
+# Separation into features and target variable
+X = df['XLogP'].values.reshape(-1, 1)
+y = df['Lipophilicity']
+
+# Splitting into training and test samples
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Training a logistic regression model
+lr_model = LogisticRegression()
+lr_model.fit(X_train, y_train)
+
+# Predictions on the test set
+y_pred_lr = lr_model.predict(X_test)
+
+# Assessing the quality of the model
+accuracy_lr = accuracy_score(y_test, y_pred_lr)
+print(f'Accuracy of Logistic Regression model: {accuracy_lr:.2f}')
+
+# Classification Report
+print(classification_report(y_test, y_pred_lr))
+
+# Construction of the error matrix
+cm_lr = confusion_matrix(y_test, y_pred_lr)
+sns.heatmap(cm_lr, annot=True, fmt='d', cmap="Blues")
+plt.title("Confusion Matrix for Logistic Regression Model")
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.show()
+
+# Training a Naive Bayes Model
+nb_model = GaussianNB()
+nb_model.fit(X_train, y_train)
+
+# Predictions on the test set
+y_pred_nb = nb_model.predict(X_test)
+
+# Assessing the quality of the model
+accuracy_nb = accuracy_score(y_test, y_pred_nb)
+print(f'Accuracy of Naive Bayes model: {accuracy_nb:.2f}')
+
+# Classification Report
+print(classification_report(y_test, y_pred_nb))
+
+# Construction of the error matrix
+cm_nb = confusion_matrix(y_test, y_pred_nb)
+sns.heatmap(cm_nb, annot=True, fmt='d', cmap="Reds")
+plt.title("Confusion Matrix for Naive Bayes Model")
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.show()
+
+# Accuracy of both models
+models = ['Logistic Regression', 'Naive Bayes']
+accuracies = [accuracy_lr, accuracy_nb]
+
+# Model comparison histogram
+plt.figure(figsize=(8, 6))
+sns.barplot(x=models, y=accuracies, palette=['lightblue', 'salmon'])
+plt.title('Comparison of Models Accuracy')
+plt.xlabel('Models')
+plt.ylabel('Accuracy Score')
+plt.ylim([0, 1])
+for i, v in enumerate(accuracies):
+    plt.text(i, v + 0.01, f'{v:.2f}', ha='center', va='bottom', fontweight='bold')
+plt.show()
