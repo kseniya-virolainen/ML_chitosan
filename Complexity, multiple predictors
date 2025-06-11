@@ -1,0 +1,124 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Loading data
+data = pd.read_csv('/content/database_chitosan.csv')
+
+# Checking the data structure
+print(data.head())
+
+# Separation into features and target variable
+X = data[['Molecular Weight' , 'Heavy Atom Count', 'H-Bond Donor Count', 'H-Bond Acceptor Count', 'Rotatable Bond Count']]
+y = data['Complexity']
+
+# Feature scaling
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Splitting into training and test samples
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Basic implementation of models
+
+# 1. K-Nearest Neighbors (KNN)
+knn_base = KNeighborsClassifier(n_neighbors=5)
+knn_base.fit(X_train, y_train)
+y_pred_knn_base = knn_base.predict(X_test)
+base_accuracy_knn = accuracy_score(y_test, y_pred_knn_base)
+
+# 2. Support Vector Machine (SVM)
+svm_base = SVC(kernel='rbf', C=1.0, gamma='scale')
+svm_base.fit(X_train, y_train)
+y_pred_svm_base = svm_base.predict(X_test)
+base_accuracy_svm = accuracy_score(y_test, y_pred_svm_base)
+
+# Improving models
+
+# Hyperparameter tuning for KNN
+param_grid_knn = {'n_neighbors': range(1, 21)}
+grid_search_knn = GridSearchCV(KNeighborsClassifier(), param_grid_knn, cv=2)
+grid_search_knn.fit(X_train, y_train)
+best_n_neighbors = grid_search_knn.best_params_['n_neighbors']
+
+# Improved model KNN
+knn_optimized = KNeighborsClassifier(n_neighbors=best_n_neighbors)
+knn_optimized.fit(X_train, y_train)
+y_pred_knn_optimized = knn_optimized.predict(X_test)
+optimized_accuracy_knn = accuracy_score(y_test, y_pred_knn_optimized)
+
+# Hyperparameter tuning for SVM
+param_grid_svm = {
+    'kernel': ['linear', 'poly', 'rbf'],
+    'C': [0.1, 1, 10],
+    'gamma': ['scale', 'auto']
+}
+grid_search_svm = GridSearchCV(SVC(), param_grid_svm, cv=3)
+grid_search_svm.fit(X_train, y_train)
+best_kernel = grid_search_svm.best_params_['kernel']
+best_C = grid_search_svm.best_params_['C']
+best_gamma = grid_search_svm.best_params_['gamma']
+
+# Improved model SVM
+svm_optimized = SVC(kernel=best_kernel, C=best_C, gamma=best_gamma)
+svm_optimized.fit(X_train, y_train)
+y_pred_svm_optimized = svm_optimized.predict(X_test)
+optimized_accuracy_svm = accuracy_score(y_test, y_pred_svm_optimized)
+
+# Visualization of results
+accuracy_knn = accuracy_score(y_test, y_pred_knn)
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+
+print(f"\nBaseline KNN Accuracy: {base_accuracy_knn:.2%}\nBaseline SVM Accuracy: {base_accuracy_svm:.2%}")
+
+print("\nOptimal Results:")
+print(f"KNN Optimal Accuracy: {optimized_accuracy_knn:.2%}\nSVM Optimal Accuracy: {optimized_accuracy_svm:.2%}")
+
+# Comparison of the basic and improved versions of the models
+plt.figure(figsize=(10, 6))
+sns.barplot(x=["Basic KNN", "Improved KNN", "Basic SVM", "Improved SVM"],
+            y=[base_accuracy_knn, optimized_accuracy_knn, base_accuracy_svm, optimized_accuracy_svm],
+            palette="Set2")
+plt.title("Comparison of model accuracy")
+plt.ylabel("Accuracy")
+plt.show()
+
+# Visualization of confusions (heatmaps)
+
+# Confusion matrix for the basic version KNN
+plt.figure(figsize=(6, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred_knn_base), annot=True, fmt="d", cmap="Blues")
+plt.title("Confusion matrix for basic KNN")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+plt.show()
+
+# Confusion matrix for the improved version KNN
+plt.figure(figsize=(6, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred_knn_optimized), annot=True, fmt="d", cmap="Greens")
+plt.title("Confusion matrix for improved KNN")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+plt.show()
+
+# Confusion matrix for the basic version SVM
+plt.figure(figsize=(6, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred_svm_base), annot=True, fmt="d", cmap="Purples")
+plt.title("Confusion matrix for basic SVM")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+plt.show()
+
+# Confusion matrix for the improved version SVM
+plt.figure(figsize=(6, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred_svm_optimized), annot=True, fmt="d", cmap="Reds")
+plt.title("Confusion matrix for improved SVM")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+plt.show()
