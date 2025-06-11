@@ -1,0 +1,97 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# 1. Loading data
+data = pd.read_csv('/content/database_chitosan.csv')
+
+# 2. Checking the data structure
+print(data.head())
+
+# 3. Defining features and target variable
+X = data[['Molecular Weight']]  # feature
+y = data['Complexity']  # target variable
+
+# 4. Feature scaling
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 5. Splitting into training and test samples
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# 6. Implementation of models
+
+# 6.1 K-Nearest Neighbors (KNN)
+knn = KNeighborsClassifier()
+knn.fit(X_train, y_train)
+y_pred_knn = knn.predict(X_test)
+
+# 6.2 Support Vector Machine (SVM)
+svc = SVC(gamma='scale')
+svc.fit(X_train, y_train)
+y_pred_svm = svc.predict(X_test)
+
+# 7. Assessing the accuracy of models
+accuracy_knn = accuracy_score(y_test, y_pred_knn)
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+
+print(f"\nBaseline KNN Accuracy: {accuracy_knn:.2%}\nBaseline SVM Accuracy: {accuracy_svm:.2%}")
+
+# 8. Improving Models: Hyperparameter Selection
+
+# 8.1 Optimization KNN
+param_grid_knn = {'n_neighbors': list(range(1, 21))}
+grid_search_knn = GridSearchCV(knn, param_grid_knn, scoring='accuracy', cv=2)
+grid_search_knn.fit(X_train, y_train)
+best_knn = grid_search_knn.best_estimator_
+y_pred_knn_opt = best_knn.predict(X_test)
+optimal_accuracy_knn = accuracy_score(y_test, y_pred_knn_opt)
+
+# 8.2 Optimization SVM
+param_grid_svm = {'C': [0.1, 1, 10], 'gamma': ['scale', 'auto'], 'kernel': ['linear', 'rbf']}
+grid_search_svm = GridSearchCV(svc, param_grid_svm, scoring='accuracy', cv=2)
+grid_search_svm.fit(X_train, y_train)
+best_svm = grid_search_svm.best_estimator_
+y_pred_svm_opt = best_svm.predict(X_test)
+optimal_accuracy_svm = accuracy_score(y_test, y_pred_svm_opt)
+
+# 9. Comparison of improved models
+print("\nOptimal Results:")
+print(f"KNN Optimal Accuracy: {optimal_accuracy_knn:.2%}\nSVM Optimal Accuracy: {optimal_accuracy_svm:.2%}")
+
+# 10. Visualization of results
+
+# 10.1 Accuracy Comparison Graph
+plt.figure(figsize=(8, 6))
+sns.barplot(x=["KNN Basic", "KNN Optimized", "SVM Basic", "SVM Optimized"],
+            y=[accuracy_knn, optimal_accuracy_knn, accuracy_svm, optimal_accuracy_svm],
+            palette="Set2")
+plt.title("Comparison of model accuracy")
+plt.ylabel("Accuracy")
+plt.show()
+
+# 10.2 Confusion Matrix for improved models
+plt.figure(figsize=(10, 4))
+
+# Confusion Matrix for KNN
+plt.subplot(1, 2, 1)
+sns.heatmap(confusion_matrix(y_test, y_pred_knn_opt), annot=True, fmt="d", cmap="Blues")
+plt.title("Confusion Matrix for KNN")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+
+# Confusion Matrix for SVM
+plt.subplot(1, 2, 2)
+sns.heatmap(confusion_matrix(y_test, y_pred_svm_opt), annot=True, fmt="d", cmap="Reds")
+plt.title("Confusion Matrix for SVM")
+plt.xlabel("Predicted value")
+plt.ylabel("Real value")
+
+plt.tight_layout()
+plt.show()
